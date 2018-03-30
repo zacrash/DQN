@@ -1,12 +1,12 @@
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten, Convolution2D, MaxPooling2D
+from keras.layers import Dense, Activation, Flatten, Convolution2D, MaxPooling2D, LSTM
 from keras.optimizers import Adam
 from collections import deque
 import random
 
 
-# Deep Q-learning Agent Class
+# Deep Q-learning Agent
 class DQN:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
@@ -45,6 +45,14 @@ class DQN:
 
         return model
 
+    def load(file, training):
+        # Load model from file
+        self.model = load_model('drqn_model.h5')
+        
+        if not training:
+            # Only want greedy decisions
+            self.epsilon = 0.0
+
     """ Save values to memory """
     def remember(self, state, action, reward, nextState, done):
         self.memory.append((state, action, reward, nextState, done))
@@ -70,3 +78,34 @@ class DQN:
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+
+    def get_model():
+        return self.model
+
+""" Deep Recurrent Q-Learning Network """
+""" https://arxiv.org/pdf/1507.06527.pdf """
+class DRQN(DQN):
+    def __init__(self, state_size, action_size):
+        super().__init__(state_size, action_size)
+        self.model = self._build_model()
+
+    def _build_model(self):
+        # Input = [pedx-x, pedy-y, orthogonalVelocitiesDifference, pedTheta-Theta, headTheta]^T
+        model = Sequential()
+
+        # Convolution Layers
+        model.add(Convolution2D(32,(8,8), strides=(4,4), activation='relu',
+                                input_shape=self.state_size))
+
+        model.add(Convolution2D(64,(4,4), strides=(2,2), activation='relu'))
+        model.add(Convolution2D(64,(3,3), activation='relu'))
+
+        # Fully Connected Layers
+        model.add(Flatten())
+        model.add(LSTM(units=32))
+
+        model.add(Dense(self.action_size, activation='linear'))
+
+        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
+
+        return model

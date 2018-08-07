@@ -22,7 +22,7 @@ class DQN:
 
         self.memory = deque(maxlen=2000)
 
-        self.model = self._build_model()
+        self.model = self._build_model_linear()
 
 
     """ From Mnih et al. "Playing atari with deep reinforcement learning." 2013. """
@@ -43,6 +43,14 @@ class DQN:
 
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
 
+        return model
+
+    def _build_model_linear(self):
+        model = Sequential()
+        model.add(Dense(24, activation='relu', input_shape=self.state_size))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.action_size))
+        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
     def load(file, training):
@@ -70,7 +78,7 @@ class DQN:
         batch_size = min(self.batch_size, len(self.memory))
         minibatch = random.sample(self.memory, batch_size)
         for state, action, reward, next_state, done in minibatch:
-            target = reward
+            target = 0
             if not done:
                 target = (reward + self.gamma * np.amax(self.model.predict(next_state)[0]))
             target_f = self.model.predict(state)

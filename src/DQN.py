@@ -49,7 +49,7 @@ class DQN:
         model = Sequential()
         model.add(Dense(24, activation='relu', input_shape=self.state_size))
         model.add(Dense(24, activation='relu'))
-        model.add(Dense(self.action_size))
+        model.add(Dense(self.action_size, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
